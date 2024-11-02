@@ -52,6 +52,7 @@
         let localStream;
         let remoteStream;
         let peerConnection;
+        const socket = io(); // Inicijalizacija Socket.io
 
         // WebRTC konfiguracija
         const configuration = {
@@ -111,7 +112,26 @@
                 await peerConnection.setLocalDescription(offer);
                 console.log("Ponuda je uspešno poslata.");
 
-                // Pošaljite ponudu na signaling server (nije ovde implementirano)
+                // Pošaljite ponudu na signaling server
+                socket.emit('webrtc-offer', offer);
+
+                // Očekuj odgovor
+                socket.on('webrtc-answer', async (answer) => {
+                    console.log('Primljen WebRTC odgovor');
+                    await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+                });
+
+                // Očekuj ICE kandidate
+                socket.on('webrtc-ice-candidate', (candidate) => {
+                    console.log('Primljen ICE kandidat');
+                    peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+                });
+
+                peerConnection.onicecandidate = (event) => {
+                    if (event.candidate) {
+                        socket.emit('webrtc-ice-candidate', event.candidate);
+                    }
+                };
 
             } catch (error) {
                 console.error("Greška pri inicijalizaciji stream-a:", error);
