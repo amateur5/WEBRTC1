@@ -16,7 +16,7 @@ app.get('/', (req, res) => {
 // Konfiguracija Socket.io za chat i WebRTC signaling
 io.on('connection', (socket) => {
     console.log('Novi korisnik je povezan');
-    
+
     // Rukovanje chat porukama
     socket.on('chat message', (msg) => {
         console.log('Poruka primljena: ', msg);
@@ -44,6 +44,7 @@ io.on('connection', (socket) => {
     });
 });
 
+// Pokrenite server
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
     console.log(`Server je pokrenut na portu ${PORT}`);
