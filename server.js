@@ -9,6 +9,7 @@ const io = socketIo(server);
 // Serviraj statičke datoteke iz 'public' foldera
 app.use(express.static(__dirname + '/public'));
 
+// Početna stranica
 app.get('/', (req, res) => {
     res.sendFile(__dirname + '/public/index.html');
 });
@@ -26,17 +27,17 @@ io.on('connection', (socket) => {
     // Rukovanje WebRTC signalizacijom
     socket.on('webrtc-offer', (offer) => {
         console.log('Primljena WebRTC ponuda');
-        socket.broadcast.emit('webrtc-offer', offer); // Šalje ponudu svim korisnicima osim posiljaoca
+        socket.broadcast.emit('webrtc-offer', offer); // Šalje ponudu svim korisnicima osim pošiljaocu
     });
 
     socket.on('webrtc-answer', (answer) => {
         console.log('Primljen WebRTC odgovor');
-        socket.broadcast.emit('webrtc-answer', answer); // Šalje odgovor svim korisnicima osim posiljaoca
+        socket.broadcast.emit('webrtc-answer', answer); // Šalje odgovor svim korisnicima osim pošiljaocu
     });
 
     socket.on('webrtc-ice-candidate', (candidate) => {
         console.log('Primljen ICE kandidat');
-        socket.broadcast.emit('webrtc-ice-candidate', candidate); // Šalje ICE kandidat svim korisnicima osim posiljaoca
+        socket.broadcast.emit('webrtc-ice-candidate', candidate); // Šalje ICE kandidat svim korisnicima osim pošiljaocu
     });
 
     socket.on('disconnect', () => {
