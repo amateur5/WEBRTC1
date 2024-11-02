@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebRTC Audio Chat</title>
+    <script src="https://cdn.socket.io/4.5.0/socket.io.min.js"></script>
+    <style>
+        body {
+            background-color: black;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+        }
+        audio {
+            margin-top: 20px;
+        }
+        button {
+            margin: 5px;
+            background-color: white;
+            color: black;
+            border: none;
+            padding: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+        }
+        button:hover {
+            background-color: #f0f0f0;
+        }
+    </style>
+</head>
+<body>
+    <h1>WebRTC Audio Chat</h1>
+    <audio id="audioPlayer" controls autoplay></audio>
+    
+    <select id="audioInputSelect"></select>
+    
+    <button id="startButton">Start</button>
+    <button id="stopButton">Stop</button>
+    
+    <script>
+        const audioPlayer = document.getElementById('audioPlayer');
+        const startButton = document.getElementById('startButton');
+        const stopButton = document.getElementById('stopButton');
+        const audioInputSelect = document.getElementById('audioInputSelect');
+
+        let localStream;
+        let remoteStream;
+        let peerConnection;
+
+        // WebRTC konfiguracija
+        const configuration = {
+            iceServers: [
+                { urls: 'stun:stun.l.google.com:19302' }
+            ]
+        };
+
+        // Učitaj audio uređaje
+        async function loadAudioDevices() {
+            const devices = await navigator.mediaDevices.enumerateDevices();
+            audioInputSelect.innerHTML = '';
+
+            devices.forEach(device => {
+                if (device.kind === 'audioinput') {
+                    const option = document.createElement('option');
+                    option.value = device.deviceId;
+                    option.text = device.label || `Mikrofon ${audioInputSelect.length + 1}`;
+                    audioInputSelect.appendChild(option);
+                }
+            });
+
+            // Postavi defaultni uređaj
+            if (audioInputSelect.options.length > 0) {
+                audioInputSelect.value = audioInputSelect.options[0].value; // Postavi prvi uređaj kao default
+            }
+        }
+
+        // Inicijalizuj stream
+        async function initStream() {
+            try {
+                const selectedDeviceId = audioInputSelect.value;
+                console.log("Izabrani uređaj ID:", selectedDeviceId);
+                
+                localStream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: { deviceId: selectedDeviceId ? { exact: selectedDeviceId } : undefined } 
+                });
+                console.log("Lokalni stream je uspešno dobijen.");
+
+                remoteStream = new MediaStream();
+                audioPlayer.srcObject = remoteStream;
+
+                peerConnection = new RTCPeerConnection(configuration);
+
+                // Dodaj lokalni stream
+                localStream.getTracks().forEach(track => {
+                    peerConnection.addTrack(track, localStream);
+                });
+
+                // Kada se doda remote stream
+                peerConnection.ontrack = (event) => {
+                    remoteStream.addTrack(event.track);
+                };
+
+                // Započni vezu
+                const offer = await peerConnection.createOffer();
+                await peerConnection.setLocalDescription(offer);
+                console.log("Ponuda je uspešno poslata.");
+
+                // Pošaljite ponudu na signaling server (nije ovde implementirano)
+
+            } catch (error) {
+                console.error("Greška pri inicijalizaciji stream-a:", error);
+                alert("Greška: " + error.message); // Dodatna obaveštenja o grešci
+            }
+        }
+
+        startButton.addEventListener('click', initStream);
+        stopButton.addEventListener('click', () => {
+            if (peerConnection) {
+                peerConnection.close();
+                peerConnection = null;
+            }
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop());
+                localStream = null;
+            }
+        });
+
+        // Učitaj audio uređaje kada se stranica učita
+        window.onload = loadAudioDevices;
+    </script>
+
+</body>
+</html>
